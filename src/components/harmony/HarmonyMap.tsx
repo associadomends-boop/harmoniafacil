@@ -6,7 +6,7 @@ interface Props {
   chords: Chord[];
   selected: Chord | null;
   nextDegrees: number[];
-  mainDegree?: number;
+  mainDegree?: number | undefined;
   onSelect: (c: Chord) => void;
 }
 
