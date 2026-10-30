@@ -11,7 +11,7 @@ export function ProgressionBuilder({ chords }: { chords: Chord[] }) {
 
   const play = () => {
     if (!seq.length) return;
-    playSequence(seq.map((d) => chordMidi(chords[d])));
+    playSequence(seq.map((d) => chordMidi(chords[d]!)));
     seq.forEach((_, i) => setTimeout(() => setPlaying(i), i * 1100));
     setTimeout(() => setPlaying(null), seq.length * 1100);
   };
@@ -31,7 +31,7 @@ export function ProgressionBuilder({ chords }: { chords: Chord[] }) {
       <div className="mt-5 flex min-h-24 flex-wrap items-center gap-2 rounded-2xl bg-muted p-3">
         {seq.length === 0 && <span className="text-sm text-muted-foreground">Sua sequência aparece aqui…</span>}
         {seq.map((d, i) => {
-          const ch = chords[d];
+          const ch = chords[d]!;
           const c = FN_CLASSES[ch.fn];
           return (
             <div key={i} className="flex items-center gap-2">

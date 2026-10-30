@@ -13,7 +13,7 @@ interface Props {
 const ORDER: HarmonicFunction[] = ["dominant", "tonic", "subdominant"];
 
 export function HarmonyMap({ chords, selected, nextDegrees, mainDegree, onSelect }: Props) {
-  const activeFns = new Set(nextDegrees.map((d) => chords[d].fn));
+  const activeFns = new Set(nextDegrees.map((d) => chords[d]!.fn));
   return (
     <div className="relative mx-auto flex max-w-md flex-col items-center gap-10 py-2">
       <Arrows />

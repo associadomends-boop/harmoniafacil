@@ -26,8 +26,8 @@ function Index() {
   const [key, setKey] = useState<Key>("C");
   const [deg, setDeg] = useState<number | null>(null);
   const chords = useMemo(() => chordsForKey(key), [key]);
-  const selected = deg === null ? null : chords[deg];
-  const next = deg === null ? [] : NEXT[deg];
+  const selected = deg === null ? null : chords[deg]!;
+  const next = deg === null ? [] : NEXT[deg]!;
 
   const select = (c: Chord) => {
     setDeg(c.degree);

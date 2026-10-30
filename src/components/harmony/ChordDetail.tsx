@@ -31,8 +31,8 @@ export function ChordDetail({ chord, chords, onSelect }: { chord: Chord | null; 
       {ctx && <p className="mt-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">💡 {ctx}</p>}
       <p className="mt-5 text-xs uppercase tracking-widest text-muted-foreground">Próximos caminhos</p>
       <ul className="mt-2 space-y-2">
-        {NEXT[chord.degree].map((p) => {
-          const n = chords[p.degree];
+        {NEXT[chord.degree]!.map((p) => {
+          const n = chords[p.degree]!;
           const nc = FN_CLASSES[n.fn];
           return (
             <li key={p.degree}>

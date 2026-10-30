@@ -31,11 +31,11 @@ export function chordsForKey(key: Key): Chord[] {
     const root = (base + step) % 12;
     return {
       degree: i,
-      roman: ROMANS[i],
-      name: names[root] + QUALITIES[i],
+      roman: ROMANS[i]!,
+      name: names[root]! + QUALITIES[i]!,
       root,
-      quality: QUALITIES[i],
-      fn: FUNCTIONS[i],
+      quality: QUALITIES[i]!,
+      fn: FUNCTIONS[i]!,
     };
   });
 }
