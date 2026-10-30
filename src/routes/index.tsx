@@ -49,13 +49,13 @@ function Index() {
       </header>
 
       <div className="mt-6">
-        <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Tonalidade</p>
+        <p className="mb-2 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tonalidade</p>
         <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
           {KEYS.map((k) => (
             <button
               key={k}
               onClick={() => setKey(k)}
-              className={cn("rounded-xl py-2.5 font-display font-bold transition-colors", k === key ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-accent")}
+              className={cn("rounded-xl py-3 font-display text-xl font-extrabold transition-colors sm:text-2xl", k === key ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-accent")}
             >
               {k}
             </button>
@@ -65,7 +65,7 @@ function Index() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Mapa das funções · {key} maior</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mapa das funções · {key} maior</h2>
           <HarmonyMap chords={chords} selected={selected} nextDegrees={next.map((n) => n.degree)} mainDegree={next.find((n) => n.main)?.degree} onSelect={select} />
         </section>
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
