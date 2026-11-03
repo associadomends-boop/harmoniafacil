@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FN_INFO, chordMidi, type Chord } from "@/lib/harmony";
@@ -6,14 +6,19 @@ import { playSequence } from "@/lib/audio";
 import { FN_CLASSES } from "./fn-styles";
 
 export function ProgressionBuilder({ chords }: { chords: Chord[] }) {
+  // Sequence stores scale degrees, so changing the key converts every chord automatically.
   const [seq, setSeq] = useState<number[]>([3, 4, 0]);
   const [playing, setPlaying] = useState<number | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const play = () => {
     if (!seq.length) return;
+    timers.current.forEach(clearTimeout);
     playSequence(seq.map((d) => chordMidi(chords[d]!)));
-    seq.forEach((_, i) => setTimeout(() => setPlaying(i), i * 1100));
-    setTimeout(() => setPlaying(null), seq.length * 1100);
+    timers.current = seq.map((_, i) => setTimeout(() => setPlaying(i), i * 1100));
+    timers.current.push(setTimeout(() => setPlaying(null), seq.length * 1100));
   };
 
   return (
