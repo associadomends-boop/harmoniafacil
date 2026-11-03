@@ -70,7 +70,7 @@ function Index() {
         </section>
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <ChordDetail chord={selected} chords={chords} onSelect={select} />
-          <ProgressionBuilder key={key} chords={chords} />
+          <ProgressionBuilder chords={chords} />
         </div>
       </div>
     </main>
