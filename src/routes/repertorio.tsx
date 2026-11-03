@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { KEYS, type Key } from "@/lib/harmony";
+import { KEYS, chordsForKey, type Key } from "@/lib/harmony";
+import { cn } from "@/lib/utils";
+import { FN_CLASSES } from "@/components/harmony/fn-styles";
 
 export const Route = createFileRoute("/repertorio")({
   head: () => ({
@@ -23,6 +25,8 @@ interface Song {
   key: Key;
   bpm: string;
   notes: string;
+  /** Scale degrees (0-6); chord names are derived from the key, so changing key transposes. */
+  prog?: number[];
 }
 
 const STORAGE = "harmonia-setlist";
@@ -34,6 +38,8 @@ function Repertorio() {
   const [key, setKey] = useState<Key>("C");
   const [bpm, setBpm] = useState("");
   const [notes, setNotes] = useState("");
+  const [prog, setProg] = useState<number[]>([]);
+  const formChords = chordsForKey(key);
 
   useEffect(() => {
     try {
@@ -47,11 +53,13 @@ function Repertorio() {
 
   const add = () => {
     if (!title.trim()) return;
-    setSongs((s) => [...s, { id: crypto.randomUUID(), title: title.trim(), key, bpm, notes }]);
+    setSongs((s) => [...s, { id: crypto.randomUUID(), title: title.trim(), key, bpm, notes, prog }]);
+    setProg([]);
     setTitle("");
     setBpm("");
     setNotes("");
   };
+  const setSongKey = (id: string, k: Key) => setSongs((s) => s.map((x) => (x.id === id ? { ...x, key: k } : x)));
   const move = (i: number, d: number) =>
     setSongs((s) => {
       const j = i + d;
@@ -82,6 +90,26 @@ function Repertorio() {
           <input className={input} inputMode="numeric" placeholder="BPM" value={bpm} onChange={(e) => setBpm(e.target.value.replace(/\D/g, ""))} />
         </div>
         <input className={input} placeholder="Anotações (capo, intro, quem começa…)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <div>
+          <p className="mb-2 text-base font-bold text-muted-foreground">Sequência de acordes (toque para adicionar)</p>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+            {formChords.map((ch) => (
+              <button key={ch.degree} type="button" onClick={() => setProg((p) => [...p, ch.degree])} className={cn("rounded-2xl py-3 text-fn-foreground active:scale-95", FN_CLASSES[ch.fn].bg)}>
+                <span className="block font-display text-2xl font-extrabold leading-none">{ch.name}</span>
+                <span className="mt-1 block text-xs font-bold">{ch.roman}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex min-h-14 flex-wrap items-center gap-2 rounded-2xl bg-muted p-3">
+            {prog.length === 0 && <span className="text-base font-semibold text-muted-foreground">Nenhum acorde ainda…</span>}
+            {prog.map((d, i) => (
+              <button key={i} type="button" onClick={() => setProg((p) => p.filter((_, j) => j !== i))} aria-label="Remover acorde" className={cn("rounded-xl border-2 bg-card px-3 py-1 font-display text-2xl font-extrabold", FN_CLASSES[formChords[d]!.fn].border, FN_CLASSES[formChords[d]!.fn].text)}>
+                {formChords[d]!.name}
+              </button>
+            ))}
+          </div>
+          {prog.length > 0 && <p className="mt-1 text-sm font-medium text-muted-foreground">Toque num acorde da sequência para removê-lo.</p>}
+        </div>
         <button onClick={add} disabled={!title.trim()} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-lg font-extrabold text-primary-foreground disabled:opacity-40">
           <Plus className="h-6 w-6" /> Adicionar música
         </button>
@@ -90,16 +118,26 @@ function Repertorio() {
       <ol className="mt-6 space-y-3">
         {songs.length === 0 && <li className="rounded-2xl bg-muted p-5 text-lg font-semibold text-muted-foreground">Nenhuma música ainda.</li>}
         {songs.map((s, i) => (
-          <li key={s.id} className="flex items-center gap-3 rounded-3xl border border-border bg-card p-4">
+          <li key={s.id} className="flex items-start gap-3 rounded-3xl border border-border bg-card p-4">
             <span className="font-display text-4xl font-extrabold text-muted-foreground">{i + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-2xl font-extrabold">{s.title}</p>
               <p className="text-lg font-bold">
-                <span className="text-tonic">Tom {s.key}</span>
-                {s.bpm && <span className="text-muted-foreground"> · {s.bpm} BPM</span>}
+                {s.bpm && <span className="text-muted-foreground">{s.bpm} BPM</span>}
               </p>
+              {!!s.prog?.length && (
+                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                  {s.prog.map((d, j) => {
+                    const ch = chordsForKey(s.key)[d]!;
+                    return <span key={j} className={cn("font-display text-3xl font-extrabold", FN_CLASSES[ch.fn].text)}>{ch.name}</span>;
+                  })}
+                </div>
+              )}
               {s.notes && <p className="text-base font-medium text-muted-foreground">{s.notes}</p>}
             </div>
+            <select value={s.key} onChange={(e) => setSongKey(s.id, e.target.value as Key)} aria-label="Mudar tom" className="self-start rounded-xl bg-primary px-2 py-2 font-display text-2xl font-extrabold text-primary-foreground">
+              {KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
             <div className="flex flex-col gap-1">
               <button onClick={() => move(i, -1)} disabled={i === 0} className="rounded-xl bg-secondary p-2 disabled:opacity-30" aria-label="Subir"><ArrowUp className="h-6 w-6" /></button>
               <button onClick={() => move(i, 1)} disabled={i === songs.length - 1} className="rounded-xl bg-secondary p-2 disabled:opacity-30" aria-label="Descer"><ArrowDown className="h-6 w-6" /></button>
