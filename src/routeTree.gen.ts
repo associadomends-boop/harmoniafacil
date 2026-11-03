@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AprenderRouteImport } from './routes/aprender'
+import { Route as RepertorioRouteImport } from './routes/repertorio'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const AprenderRoute = AprenderRouteImport.update({
   path: '/aprender',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepertorioRoute = RepertorioRouteImport.update({
+  id: '/repertorio',
+  path: '/repertorio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/repertorio': typeof RepertorioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/repertorio': typeof RepertorioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/repertorio': typeof RepertorioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/aprender'
+  fullPaths: '/' | '/aprender' | '/repertorio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aprender'
-  id: '__root__' | '/' | '/aprender'
+  to: '/' | '/aprender' | '/repertorio'
+  id: '__root__' | '/' | '/aprender' | '/repertorio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AprenderRoute: typeof AprenderRoute
+  RepertorioRoute: typeof RepertorioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AprenderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/repertorio': {
+      id: '/repertorio'
+      path: '/repertorio'
+      fullPath: '/repertorio'
+      preLoaderRoute: typeof RepertorioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AprenderRoute: AprenderRoute,
+  RepertorioRoute: RepertorioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
