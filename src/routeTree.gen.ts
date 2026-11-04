@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AprenderRouteImport } from './routes/aprender'
+import { Route as EscalasRouteImport } from './routes/escalas'
 import { Route as RepertorioRouteImport } from './routes/repertorio'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AprenderRoute = AprenderRouteImport.update({
   path: '/aprender',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EscalasRoute = EscalasRouteImport.update({
+  id: '/escalas',
+  path: '/escalas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RepertorioRoute = RepertorioRouteImport.update({
   id: '/repertorio',
   path: '/repertorio',
@@ -32,30 +38,34 @@ const RepertorioRoute = RepertorioRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/escalas': typeof EscalasRoute
   '/repertorio': typeof RepertorioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/escalas': typeof EscalasRoute
   '/repertorio': typeof RepertorioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aprender': typeof AprenderRoute
+  '/escalas': typeof EscalasRoute
   '/repertorio': typeof RepertorioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/aprender' | '/repertorio'
+  fullPaths: '/' | '/aprender' | '/escalas' | '/repertorio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aprender' | '/repertorio'
-  id: '__root__' | '/' | '/aprender' | '/repertorio'
+  to: '/' | '/aprender' | '/escalas' | '/repertorio'
+  id: '__root__' | '/' | '/aprender' | '/escalas' | '/repertorio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AprenderRoute: typeof AprenderRoute
+  EscalasRoute: typeof EscalasRoute
   RepertorioRoute: typeof RepertorioRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AprenderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/escalas': {
+      id: '/escalas'
+      path: '/escalas'
+      fullPath: '/escalas'
+      preLoaderRoute: typeof EscalasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/repertorio': {
       id: '/repertorio'
       path: '/repertorio'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AprenderRoute: AprenderRoute,
+  EscalasRoute: EscalasRoute,
   RepertorioRoute: RepertorioRoute,
 }
 export const routeTree = rootRouteImport
