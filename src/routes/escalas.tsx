@@ -105,7 +105,7 @@ function ScaleCard({ scale, root, keyName }: { scale: ScaleDef; root: number; ke
   const names = noteNames(root, scale);
   const intervals = scale.steps.map((s, i) => (scale.steps[i + 1] ?? 12) - s);
   return (
-    <section className="rounded-3xl border border-border bg-card p-5">
+    <section className="min-w-0 rounded-3xl border border-border bg-card p-5">
       <h2 className={cn("text-2xl font-extrabold", scale.color.text)}>
         {keyName} {scale.name}
       </h2>
