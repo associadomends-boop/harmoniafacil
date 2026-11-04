@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { GraduationCap, ListMusic } from "lucide-react";
+import { GraduationCap, ListMusic, Piano } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KEYS, NEXT, chordMidi, chordsForKey, type Chord, type Key } from "@/lib/harmony";
 import { playChord } from "@/lib/audio";
@@ -46,6 +46,9 @@ function Index() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link to="/repertorio" className="flex items-center gap-2 rounded-2xl bg-secondary px-3 py-2 text-sm font-semibold">
             <ListMusic className="h-4 w-4" /> Repertório
+          </Link>
+          <Link to="/escalas" className="flex items-center gap-2 rounded-2xl bg-secondary px-3 py-2 text-sm font-semibold">
+            <Piano className="h-4 w-4" /> Escalas
           </Link>
           <Link to="/aprender" className="flex items-center gap-2 rounded-2xl bg-secondary px-3 py-2 text-sm font-semibold">
             <GraduationCap className="h-4 w-4" /> Aprender

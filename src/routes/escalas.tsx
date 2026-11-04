@@ -52,7 +52,7 @@ const SCALES: ScaleDef[] = [
 
 function noteNames(root: number, scale: ScaleDef) {
   const relMajor = scale.id === "major" ? root : (root + 3) % 12;
-  const names = FLAT_MAJORS.includes(relMajor) || (scale.id === "minor" && relMajor === 0 && false) ? FLATS : SHARPS;
+  const names = FLAT_MAJORS.includes(relMajor) ? FLATS : SHARPS;
   return scale.steps.map((s) => names[(root + s) % 12]!);
 }
 
@@ -156,8 +156,7 @@ function Keyboard({ root, scale }: { root: number; scale: ScaleDef }) {
             const on = pcs.has(pc);
             const isRoot = pc === root;
             return (
-              <div key={`${o}-${pc}`} className={cn("relative flex-1 rounded-b-lg", on ? scale.color.soft : "bg-foreground/90", "bg-clip-padding")}>
-                {!on && <div className="absolute inset-0 rounded-b-lg bg-foreground/90" />}
+              <div key={`${o}-${pc}`} className={cn("relative flex-1 rounded-b-lg", on ? scale.color.soft : "bg-foreground/90")}>
                 {on && (
                   <span className={cn("absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-md px-0.5 text-xs font-extrabold sm:text-sm", isRoot ? cn(scale.color.bg, "text-fn-foreground") : scale.color.text)}>
                     {nameFor(pc, root, scale)}
