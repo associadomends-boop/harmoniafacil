@@ -20,7 +20,8 @@ export const Route = createFileRoute("/escalas")({
 
 const SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-const FLAT_MAJORS = [5, 10, 3, 8, 1]; // F Bb Eb Ab Db
+const FLAT_MAJORS = [5, 10, 3, 8]; // F Bb Eb Ab
+const FLAT_MINORS = [0, 2, 5, 7, 3, 8, 10]; // C D F G Eb Ab Bb
 
 interface ScaleDef {
   id: "major" | "minor";
@@ -51,8 +52,8 @@ const SCALES: ScaleDef[] = [
 ];
 
 function noteNames(root: number, scale: ScaleDef) {
-  const relMajor = scale.id === "major" ? root : (root + 3) % 12;
-  const names = FLAT_MAJORS.includes(relMajor) ? FLATS : SHARPS;
+  const flat = scale.id === "major" ? FLAT_MAJORS.includes(root) : FLAT_MINORS.includes(root);
+  const names = flat ? FLATS : SHARPS;
   return scale.steps.map((s) => names[(root + s) % 12]!);
 }
 
