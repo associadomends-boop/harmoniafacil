@@ -51,10 +51,22 @@ const SCALES: ScaleDef[] = [
   },
 ];
 
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const LETTER_PC = [0, 2, 4, 5, 7, 9, 11];
+
+/** Spells each degree with its own letter (e.g. Ab minor → Cb, Fb; C# major → E#, B#). */
 function noteNames(root: number, scale: ScaleDef) {
   const flat = scale.id === "major" ? FLAT_MAJORS.includes(root) : FLAT_MINORS.includes(root);
-  const names = flat ? FLATS : SHARPS;
-  return scale.steps.map((s) => names[(root + s) % 12]!);
+  const rootName = (flat ? FLATS : SHARPS)[root]!;
+  const rootLetter = LETTERS.indexOf(rootName[0]!);
+  return scale.steps.map((s, i) => {
+    const li = (rootLetter + i) % 7;
+    const target = (root + s) % 12;
+    let diff = (target - LETTER_PC[li]! + 12) % 12;
+    if (diff > 6) diff -= 12;
+    const acc = diff === 0 ? "" : diff > 0 ? "#".repeat(diff) : "b".repeat(-diff);
+    return LETTERS[li]! + acc;
+  });
 }
 
 function nameFor(pc: number, root: number, scale: ScaleDef) {
