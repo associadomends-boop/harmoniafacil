@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { KEYS, keyIndex } from "@/lib/harmony";
+import { loadPrefs, savePrefs } from "@/lib/prefs";
+import { KeyPicker, ScalePicker } from "@/components/pickers";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Guitar, Piano } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, ROOTS, SCALES, intervalLabel, intervals, spell, steps, type ScaleDef } from "@/lib/scales";
+import { SCALES, intervalLabel, intervals, spell, steps, type ScaleDef } from "@/lib/scales";
 
 export const Route = createFileRoute("/escalas")({
   head: () => ({
@@ -28,6 +31,11 @@ const COLORS: [Color, Color] = [
 function Escalas() {
   const [root, setRoot] = useState(0);
   const [ids, setIds] = useState<[string, string]>(["jonio", "eolio"]);
+  useEffect(() => {
+    const p = loadPrefs();
+    setRoot(keyIndex(p.key));
+    setIds((x) => [p.scale, x[1]]);
+  }, []);
   const [inst, setInst] = useState<Instrument>("teclado");
   const scales = ids.map((id) => SCALES.find((s) => s.id === id)!) as [ScaleDef, ScaleDef];
 
@@ -43,14 +51,7 @@ function Escalas() {
 
       <div className="mt-6">
         <p className="mb-2 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tonalidade</p>
-        <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
-          {ROOTS.map((k, i) => (
-            <button key={k} onClick={() => setRoot(i)}
-              className={cn("rounded-xl py-3 font-display text-xl font-extrabold transition-colors sm:text-2xl", i === root ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-accent")}>
-              {k}
-            </button>
-          ))}
-        </div>
+        <KeyPicker value={KEYS[root]!} onChange={(k) => { setRoot(keyIndex(k)); savePrefs({ key: k }); }} />
       </div>
 
       <div className="mt-6">
@@ -68,7 +69,7 @@ function Escalas() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         {scales.map((sc, i) => (
           <ScaleCard key={i} scale={sc} root={root} color={COLORS[i as 0 | 1]} inst={inst}
-            onChange={(id) => setIds((p) => (i === 0 ? [id, p[1]] : [p[0], id]))} />
+            onChange={(id) => { if (i === 0) savePrefs({ scale: id }); setIds((p) => (i === 0 ? [id, p[1]] : [p[0], id])); }} />
         ))}
       </div>
 
@@ -82,17 +83,10 @@ function ScaleCard({ scale, root, color, inst, onChange }: { scale: ScaleDef; ro
   const ivs = intervals(scale);
   return (
     <section className="min-w-0 rounded-3xl border border-border bg-card p-5">
-      <select value={scale.id} onChange={(e) => onChange(e.target.value)}
-        className={cn("w-full rounded-xl border-2 bg-secondary px-3 py-3 font-display text-lg font-extrabold", color.border, color.text)}>
-        {CATEGORIES.map((c) => (
-          <optgroup key={c} label={c}>
-            {SCALES.filter((s) => s.category === c).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </optgroup>
-        ))}
-      </select>
+      <ScalePicker value={scale.id} onChange={onChange} className={cn(color.border, color.text)} />
       <h2 className={cn("mt-3 text-2xl font-extrabold", color.text)}>{sp.root} {scale.name}</h2>
       <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-        {scale.category} · {scale.formula.length} notas{sp.root !== ROOTS[root] && ` · escrita como ${sp.root}`}
+        {scale.category} · {scale.formula.length} notas{sp.root !== KEYS[root] && ` · escrita como ${sp.root}`}
       </p>
 
       <div className="mt-4 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(scale.formula.length, 8)}, minmax(0,1fr))` }}>

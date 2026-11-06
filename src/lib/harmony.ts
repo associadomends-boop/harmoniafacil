@@ -1,3 +1,5 @@
+import { scaleById, spell, steps } from "./scales";
+
 export type HarmonicFunction = "tonic" | "subdominant" | "dominant";
 
 export const KEYS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"] as const;
@@ -16,7 +18,7 @@ export interface Chord {
   roman: string;
   name: string;
   root: number; // pitch class
-  quality: "" | "m" | "dim";
+  quality: "" | "m" | "dim" | "aug";
   fn: HarmonicFunction;
 }
 
@@ -35,6 +37,31 @@ export function chordsForKey(key: Key): Chord[] {
       name: names[root]! + QUALITIES[i]!,
       root,
       quality: QUALITIES[i]!,
+      fn: FUNCTIONS[i]!,
+    };
+  });
+}
+
+const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+const SUFFIX = { "": "", m: "m", dim: "dim", aug: "+" } as const;
+
+/** Triads stacked in thirds over a 7-note scale. Functions follow the degree (I/iii/vi repouso, ii/IV preparação, V/vii tensão). */
+export function chordsForScale(rootPc: number, scaleId: string): Chord[] {
+  const scale = scaleById(scaleId) ?? scaleById("jonio")!;
+  const st = steps(scale);
+  const { notes } = spell(rootPc, scale);
+  return st.map((s, i) => {
+    const third = (st[(i + 2) % 7]! - s + 12) % 12;
+    const fifth = (st[(i + 4) % 7]! - s + 12) % 12;
+    const quality: Chord["quality"] = third === 4 ? (fifth === 8 ? "aug" : "") : fifth === 6 ? "dim" : "m";
+    const acc = scale.formula[i]!.replace(/[0-9]/g, "").replace(/b/g, "♭").replace(/#/g, "♯");
+    const num = quality === "" || quality === "aug" ? NUMERALS[i]! : NUMERALS[i]!.toLowerCase();
+    return {
+      degree: i,
+      roman: acc + num + (quality === "dim" ? "°" : quality === "aug" ? "+" : ""),
+      name: notes[i]! + SUFFIX[quality],
+      root: (rootPc + s) % 12,
+      quality,
       fn: FUNCTIONS[i]!,
     };
   });
@@ -107,7 +134,7 @@ export const CONTEXT_NOTES: Record<number, string | undefined> = {
 /** MIDI notes for a chord voicing around middle C. */
 export function chordMidi(chord: Chord): number[] {
   const third = chord.quality === "" ? 4 : 3;
-  const fifth = chord.quality === "dim" ? 6 : 7;
+  const fifth = chord.quality === "dim" ? 6 : chord.quality === "aug" ? 8 : 7;
   const root = 60 + chord.root;
   return [root - 24, root, root + third, root + fifth];
 }

@@ -32,7 +32,7 @@ export const SCALES: ScaleDef[] = [
   { id: "menor-melodica", name: "Menor melódica", category: CAT.minor, formula: f("1 2 b3 4 5 6 7") },
   { id: "menor-napolitana", name: "Menor napolitana", category: CAT.minor, formula: f("1 b2 b3 4 5 b6 7") },
   { id: "menor-cigana", name: "Menor cigana", category: CAT.minor, formula: f("1 2 b3 #4 5 b6 7") },
-  { id: "menor-espanhola", name: "Menor harmônica espanhola", category: CAT.minor, formula: f("1 b2 #2 3 4 b5 b6 b7") },
+  { id: "menor-espanhola", name: "Menor harmônica espanhola", category: CAT.minor, formula: f("1 b2 b3 3 4 b5 b6 b7") },
 
   { id: "penta-maior", name: "Pentatônica maior", category: CAT.penta, formula: f("1 2 3 5 6") },
   { id: "penta-menor", name: "Pentatônica menor", category: CAT.penta, formula: f("1 b3 4 5 b7") },
@@ -47,7 +47,7 @@ export const SCALES: ScaleDef[] = [
   { id: "cromatica", name: "Cromática", category: CAT.sym, formula: f("1 b2 2 b3 3 4 #4 5 b6 6 b7 7") },
   { id: "tons-inteiros", name: "Tons inteiros", category: CAT.sym, formula: f("1 2 3 #4 #5 b7") },
   { id: "dim-tst", name: "Diminuta tom-semitom", category: CAT.sym, formula: f("1 2 b3 4 b5 b6 6 7") },
-  { id: "dim-stt", name: "Diminuta semitom-tom", category: CAT.sym, formula: f("1 b2 #2 3 #4 5 6 b7") },
+  { id: "dim-stt", name: "Diminuta semitom-tom", category: CAT.sym, formula: f("1 b2 b3 3 #4 5 6 b7") },
   { id: "alterada", name: "Alterada (superlócria)", category: CAT.sym, formula: f("1 b2 b3 b4 b5 b6 b7") },
 
   { id: "bebop-dom", name: "Bebop dominante", category: CAT.bebop, formula: f("1 2 3 4 5 6 b7 7") },
@@ -101,10 +101,29 @@ const accCount = (notes: string[]) => notes.reduce((n, s) => n + s.length - 1, 0
 /** Correct spelling: one letter per degree, choosing the enharmonic root (sharp/flat) with fewer accidentals. */
 export function spell(rootPc: number, scale: ScaleDef): { root: string; notes: string[] } {
   const a = { root: ROOTS[rootPc]!, notes: spellFrom(ROOTS[rootPc]!, rootPc, scale) };
-  if (FLAT_ROOTS[rootPc] === ROOTS[rootPc]) return a;
   const b = { root: FLAT_ROOTS[rootPc]!, notes: spellFrom(FLAT_ROOTS[rootPc]!, rootPc, scale) };
-  return accCount(b.notes) < accCount(a.notes) ? b : a;
+  const best = FLAT_ROOTS[rootPc] !== ROOTS[rootPc] && accCount(b.notes) < accCount(a.notes) ? b : a;
+  return { root: simplify(best.root), notes: best.notes.map(simplify) };
 }
+
+/** Pitch class of a note name like "Eb" or "F##". */
+export function noteToPc(n: string) {
+  const acc = [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0);
+  return (((LETTER_PC[LETTERS.indexOf(n[0]!)]! + acc) % 12) + 12) % 12;
+}
+
+/** Replace ##, bb, E#, B#, Cb, Fb with the simple enharmonic (natural when possible). */
+export function simplify(n: string) {
+  const acc = n.slice(1);
+  if (!(acc.length > 1 || ["E#", "B#", "Cb", "Fb"].includes(n))) return n;
+  const pc = noteToPc(n);
+  const nat = LETTERS[LETTER_PC.indexOf(pc)];
+  if (nat) return nat;
+  return acc[0] === "#" ? ROOTS[pc]! : FLAT_ROOTS[pc]!;
+}
+
+export const SEVEN_NOTE_SCALES = SCALES.filter((s) => s.formula.length === 7);
+export const scaleById = (id: string) => SCALES.find((s) => s.id === id);
 
 export function intervalLabel(semis: number) {
   return ({ 1: "St", 2: "T", 3: "T½", 4: "2T" } as Record<number, string>)[semis] ?? `${semis}st`;

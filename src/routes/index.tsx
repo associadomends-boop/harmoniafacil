@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { GraduationCap, ListMusic, Piano } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { KEYS, NEXT, chordMidi, chordsForKey, type Chord, type Key } from "@/lib/harmony";
+import { NEXT, chordMidi, chordsForScale, keyIndex, type Chord, type Key } from "@/lib/harmony";
+import { SEVEN_NOTE_SCALES, scaleById, spell } from "@/lib/scales";
+import { loadPrefs, savePrefs } from "@/lib/prefs";
+import { KeyPicker, ScalePicker } from "@/components/pickers";
 import { playChord } from "@/lib/audio";
 import { HarmonyMap } from "@/components/harmony/HarmonyMap";
 import { ChordDetail } from "@/components/harmony/ChordDetail";
@@ -25,7 +28,17 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [key, setKey] = useState<Key>("C");
   const [deg, setDeg] = useState<number | null>(null);
-  const chords = useMemo(() => chordsForKey(key), [key]);
+  const [scaleId, setScaleId] = useState("jonio");
+  useEffect(() => {
+    const p = loadPrefs();
+    setKey(p.key);
+    if (SEVEN_NOTE_SCALES.some((s) => s.id === p.scale)) setScaleId(p.scale);
+  }, []);
+  const changeKey = (k: Key) => { setKey(k); savePrefs({ key: k }); };
+  const changeScale = (id: string) => { setScaleId(id); savePrefs({ scale: id }); };
+  const scale = scaleById(scaleId)!;
+  const chords = useMemo(() => chordsForScale(keyIndex(key), scaleId), [key, scaleId]);
+  const rootName = spell(keyIndex(key), scale).root;
   const selected = deg === null ? null : chords[deg]!;
   const next = deg === null ? [] : NEXT[deg]!;
 
@@ -58,22 +71,14 @@ function Index() {
 
       <div className="mt-6">
         <p className="mb-2 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tonalidade</p>
-        <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
-          {KEYS.map((k) => (
-            <button
-              key={k}
-              onClick={() => setKey(k)}
-              className={cn("rounded-xl py-3 font-display text-xl font-extrabold transition-colors sm:text-2xl", k === key ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-accent")}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
+        <KeyPicker value={key} onChange={changeKey} />
+        <p className="mb-2 mt-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">Escala</p>
+        <ScalePicker value={scaleId} onChange={changeScale} scales={SEVEN_NOTE_SCALES} />
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mapa das funções · {key} maior</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mapa das funções · {rootName} {scale.name}</h2>
           <HarmonyMap chords={chords} selected={selected} nextDegrees={next.map((n) => n.degree)} mainDegree={next.find((n) => n.main)?.degree} onSelect={select} />
         </section>
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
