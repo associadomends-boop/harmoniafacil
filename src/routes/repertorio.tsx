@@ -134,7 +134,10 @@ function Repertorio() {
   };
   const restore = () => {
     const r = parseBackup(restoreText);
-    if (!r) return toast.error("Backup inválido. Nada foi alterado.");
+    if (!r) {
+      toast.error("Backup inválido. Nada foi alterado.");
+      return;
+    }
     setSongs(r);
     setCorrupted(false);
     setRestoreOpen(false);

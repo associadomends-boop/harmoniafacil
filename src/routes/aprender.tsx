@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { EarTrainer } from "@/components/harmony/EarTrainer";
 
 export const Route = createFileRoute("/aprender")({
   head: () => ({
@@ -31,6 +32,9 @@ function Learn() {
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" /> Voltar ao mapa</Link>
       <h1 className="mt-4 text-3xl font-extrabold">Aprenda a tirar músicas de ouvido</h1>
       <p className="mt-2 text-muted-foreground">Ouça, identifique a função, antecipe o próximo acorde.</p>
+      <div className="mt-6">
+        <EarTrainer />
+      </div>
       <div className="mt-6 space-y-3">
         {TOPICS.map((x) => (
           <details key={x.t} className={`group rounded-2xl border-l-4 bg-card p-4 ${x.c}`}>
