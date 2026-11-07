@@ -1,15 +1,18 @@
 import { z } from "zod";
 import { KEYS, chordsForScale, keyIndex, type Key } from "./harmony";
-import { scaleById } from "./scales";
+import { scaleById, spell } from "./scales";
 
 export const PART_TYPES = ["Intro", "Verso", "Pré-Refrão", "Refrão", "Ponte", "Solo", "Final"] as const;
 export const STORAGE = "harmonia-setlist";
 
+export type ChordItem = number | { off: number; suf: string };
 export interface Section {
   id: string;
   type: string;
   /** Scale degrees (0-6); chord names derive from key + scale. */
-  prog: number[];
+  prog: ChordItem[];
+  marks?: { at: number; reps?: number; cue?: string }[];
+  same?: boolean;
 }
 
 export interface Song {
@@ -23,7 +26,12 @@ export interface Song {
 }
 
 const degree = z.number().int().min(0).max(6);
-const sectionSchema = z.object({ id: z.string().min(1), type: z.string().min(1), prog: z.array(degree) });
+const sectionSchema = z.object({
+  id: z.string().min(1), type: z.string().min(1),
+  prog: z.array(z.union([degree, z.object({ off: z.number().int().min(0).max(11), suf: z.string().max(12) })])),
+  marks: z.array(z.object({ at: z.number().int().min(0), reps: z.number().int().min(1).max(32).optional(), cue: z.string().max(60).optional() })).optional(),
+  same: z.boolean().optional(),
+});
 const rawSongSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -91,12 +99,39 @@ export function saveSongs(songs: Song[]): boolean {
 
 export const songChords = (s: Song) => chordsForScale(keyIndex(s.key), s.scale);
 
+export function resolveChord(song: Pick<Song, "key" | "scale">, item: ChordItem) {
+  if (typeof item === "number") {
+    const chord = chordsForScale(keyIndex(song.key), song.scale)[item];
+    return { name: chord?.name ?? "?", fn: chord?.fn ?? null };
+  }
+  const scale = scaleById(song.scale);
+  const flats = scale && spell(keyIndex(song.key), scale).notes.some((n) => n.includes("b"));
+  const names = flats ? ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] : ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  return { name: `${names[(keyIndex(song.key) + item.off) % 12]}${item.suf}`, fn: null };
+}
+
+export function sectionRuns(section: Section) {
+  if (!section.marks?.length) return [{ prog: section.prog, reps: 1, cue: "" }];
+  return section.marks.map((mark, i) => ({
+    prog: section.prog.slice(mark.at, section.marks?.[i + 1]?.at ?? section.prog.length),
+    reps: mark.reps ?? 1, cue: mark.cue ?? "",
+  }));
+}
+
+/** Must run before an automatic save; a failed copy must not overwrite the original. */
+export function backupCorruptedSongs(): boolean {
+  try {
+    const original = localStorage.getItem(STORAGE);
+    if (original !== null) localStorage.setItem(`${STORAGE}-backup`, original);
+    return true;
+  } catch { return false; }
+}
+
 export function shareText(songs: Song[]) {
   return songs
     .map((s, i) => {
       const head = `${i + 1}. ${s.title} — Tom ${s.key} (${scaleById(s.scale)?.name ?? s.scale})${s.bpm ? ` — ${s.bpm} BPM` : ""}`;
-      const ch = songChords(s);
-      const parts = s.sections.filter((x) => x.prog.length).map((x) => `${x.type}: ${x.prog.map((d) => ch[d]!.name).join(" ")}`);
+      const parts = s.sections.filter((x) => x.prog.length).map((x) => `${x.type}: ${sectionRuns(x).map((r) => `${r.prog.map((d) => resolveChord(s, d).name).join(" ")}${r.reps > 1 ? ` ×${r.reps}` : ""}`).join(" / ")}`);
       return [head, ...parts].join(" / ");
     })
     .join("\n");
