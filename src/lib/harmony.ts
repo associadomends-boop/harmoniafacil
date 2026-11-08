@@ -2,12 +2,13 @@ import { scaleById, spell, steps } from "./scales";
 
 export type HarmonicFunction = "tonic" | "subdominant" | "dominant";
 
-export const KEYS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"] as const;
+export const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
 export type Key = (typeof KEYS)[number];
 
 const SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-const FLAT_KEYS: Key[] = ["F", "Bb", "Eb", "Ab"];
+/** Converts old flat key names (e.g. "Eb") to the sharp equivalent; unknown values pass through. */
+export const toSharpKey = (k: unknown) => (typeof k === "string" && FLATS.includes(k) ? SHARPS[FLATS.indexOf(k)] : k);
 const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
 const QUALITIES = ["", "m", "m", "", "", "m", "dim"] as const;
 const ROMANS = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
@@ -22,13 +23,13 @@ export interface Chord {
   fn: HarmonicFunction;
 }
 
-export function keyIndex(key: Key) {
+export function keyIndex(key: Key | string) {
   return SHARPS.indexOf(key) >= 0 ? SHARPS.indexOf(key) : FLATS.indexOf(key);
 }
 
 export function chordsForKey(key: Key): Chord[] {
   const base = keyIndex(key);
-  const names = FLAT_KEYS.includes(key) ? FLATS : SHARPS;
+  const names = SHARPS;
   return MAJOR_STEPS.map((step, i) => {
     const root = (base + step) % 12;
     return {

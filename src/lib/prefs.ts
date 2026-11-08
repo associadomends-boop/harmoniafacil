@@ -1,4 +1,4 @@
-import { KEYS, type Key } from "./harmony";
+import { KEYS, toSharpKey, type Key } from "./harmony";
 import { scaleById } from "./scales";
 
 export interface Prefs {
@@ -14,7 +14,7 @@ export function loadPrefs(): Prefs {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE) || "{}");
     return {
-      key: KEYS.includes(raw.key) ? raw.key : DEFAULT_PREFS.key,
+      key: KEYS.includes(toSharpKey(raw.key)) ? toSharpKey(raw.key) : DEFAULT_PREFS.key,
       scale: typeof raw.scale === "string" && scaleById(raw.scale) ? raw.scale : DEFAULT_PREFS.scale,
     };
   } catch {

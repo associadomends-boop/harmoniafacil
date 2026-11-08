@@ -103,7 +103,9 @@ export function spell(rootPc: number, scale: ScaleDef): { root: string; notes: s
   const a = { root: ROOTS[rootPc]!, notes: spellFrom(ROOTS[rootPc]!, rootPc, scale) };
   const b = { root: FLAT_ROOTS[rootPc]!, notes: spellFrom(FLAT_ROOTS[rootPc]!, rootPc, scale) };
   const best = FLAT_ROOTS[rootPc] !== ROOTS[rootPc] && accCount(b.notes) < accCount(a.notes) ? b : a;
-  return { root: simplify(best.root), notes: best.notes.map(simplify) };
+  // Always display sharps: convert every note to its sharp (or natural) equivalent.
+  void best;
+  return { root: ROOTS[rootPc]!, notes: steps(scale).map((st) => ROOTS[(rootPc + st) % 12]!) };
 }
 
 /** Pitch class of a note name like "Eb" or "F##". */

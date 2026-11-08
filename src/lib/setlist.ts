@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { KEYS, chordsForScale, keyIndex, type Key } from "./harmony";
+import { KEYS, chordsForScale, keyIndex, toSharpKey, type Key } from "./harmony";
 import { scaleById, spell } from "./scales";
 
 export const PART_TYPES = ["Intro", "Verso", "Pré-Refrão", "Refrão", "Ponte", "Solo", "Final"] as const;
@@ -35,7 +35,7 @@ const sectionSchema = z.object({
 const rawSongSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
-  key: z.enum(KEYS),
+  key: z.preprocess(toSharpKey, z.enum(KEYS)),
   scale: z.string().optional(),
   bpm: z.union([z.string(), z.number()]).optional(),
   notes: z.string().optional(),
@@ -104,9 +104,7 @@ export function resolveChord(song: Pick<Song, "key" | "scale">, item: ChordItem)
     const chord = chordsForScale(keyIndex(song.key), song.scale)[item];
     return { name: chord?.name ?? "?", fn: chord?.fn ?? null };
   }
-  const scale = scaleById(song.scale);
-  const flats = scale && spell(keyIndex(song.key), scale).notes.some((n) => n.includes("b"));
-  const names = flats ? ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] : ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return { name: `${names[(keyIndex(song.key) + item.off) % 12]}${item.suf}`, fn: null };
 }
 
