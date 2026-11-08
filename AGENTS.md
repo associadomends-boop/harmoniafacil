@@ -9,5 +9,6 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Chord names come from `chordsForScale(rootPc, scaleId)` and songs store scale degrees; changing key/scale must only rename chords, never rewrite degrees.
+- Resolve stored chords through `resolveChord`: diatonic items are degrees and off-scale items are root-relative semitone offsets; key/scale changes only rename them, preserving stored values.
+- Keep cifra parsing and its sanitized song projection separate from the import dialog; reuse SectionChords for repetition/cue rendering in preview, repertory and stage to keep persisted and displayed structures consistent.
 - Browser storage (`harmonia-prefs`, `harmonia-setlist`) is read only in useEffect and validated with zod in `src/lib/setlist.ts`/`prefs.ts`, so SSR and corrupted data never break a page.

@@ -11,8 +11,8 @@ export interface Section {
   type: string;
   /** Scale degrees (0-6); chord names derive from key + scale. */
   prog: ChordItem[];
-  marks?: { at: number; reps?: number; cue?: string }[];
-  same?: boolean;
+  marks?: { at: number; reps?: number | undefined; cue?: string | undefined }[] | undefined;
+  same?: boolean | undefined;
 }
 
 export interface Song {

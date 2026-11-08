@@ -3,9 +3,8 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { type Key } from "@/lib/harmony";
 import { scaleById } from "@/lib/scales";
-import { loadSongs, saveSongs, songChords, type Song } from "@/lib/setlist";
-import { cn } from "@/lib/utils";
-import { FN_CLASSES } from "@/components/harmony/fn-styles";
+import { loadSongs, saveSongs, backupCorruptedSongs, type Song } from "@/lib/setlist";
+import { SectionChords } from "@/components/SectionChords";
 import { KeyPicker } from "@/components/pickers";
 
 export const Route = createFileRoute("/palco")({
@@ -28,7 +27,9 @@ function Palco() {
   const [i, setI] = useState(0);
 
   useEffect(() => {
-    setSongs(loadSongs().songs);
+    const result = loadSongs();
+    if (result.corrupted) backupCorruptedSongs();
+    setSongs(result.songs);
     setLoaded(true);
   }, []);
 
@@ -55,7 +56,8 @@ function Palco() {
   const setKey = (k: Key) => {
     const next = songs.map((s, j) => (j === i ? { ...s, key: k } : s));
     setSongs(next);
-    saveSongs(next);
+    const stored = loadSongs();
+    if (!stored.corrupted || backupCorruptedSongs()) saveSongs(next);
   };
   const go = (d: number) => setI((x) => Math.min(Math.max(x + d, 0), songs.length - 1));
 
@@ -92,7 +94,6 @@ function Palco() {
 }
 
 function SongView({ song }: { song: Song }) {
-  const chords = songChords(song);
   return (
     <>
       <h1 className="text-4xl font-extrabold leading-tight sm:text-6xl">{song.title}</h1>
@@ -104,11 +105,7 @@ function SongView({ song }: { song: Song }) {
         {song.sections.map((sec) => (
           <section key={sec.id}>
             <p className="text-lg font-extrabold uppercase tracking-widest text-muted-foreground">{sec.type}</p>
-            <div className="flex flex-wrap gap-x-5 gap-y-1">
-              {sec.prog.map((d, j) => (
-                <span key={j} className={cn("font-display text-6xl font-extrabold leading-tight sm:text-7xl", FN_CLASSES[chords[d]!.fn].text)}>{chords[d]!.name}</span>
-              ))}
-            </div>
+            <SectionChords key={`${song.id}-${sec.id}`} song={song} section={sec} stage />
           </section>
         ))}
       </div>

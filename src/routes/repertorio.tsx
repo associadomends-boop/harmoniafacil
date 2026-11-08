@@ -5,10 +5,13 @@ import { toast } from "sonner";
 import { chordsForScale, keyIndex, type Key } from "@/lib/harmony";
 import { SEVEN_NOTE_SCALES, scaleById } from "@/lib/scales";
 import { loadPrefs, savePrefs } from "@/lib/prefs";
-import { PART_TYPES, loadSongs, parseBackup, saveSongs, shareText, songChords, type Section, type Song } from "@/lib/setlist";
+import { PART_TYPES, loadSongs, parseBackup, saveSongs, shareText, resolveChord, backupCorruptedSongs, type Section, type Song } from "@/lib/setlist";
 import { cn } from "@/lib/utils";
 import { FN_CLASSES } from "@/components/harmony/fn-styles";
 import { KeyPicker, ScalePicker } from "@/components/pickers";
+import { CifraImport, CifraSearch } from "@/components/CifraImport";
+import { SectionChords } from "@/components/SectionChords";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/repertorio")({
   head: () => ({
@@ -28,7 +31,11 @@ function moveItem<T>(arr: T[], i: number, d: number): T[] {
   const j = i + d;
   if (j < 0 || j >= arr.length) return arr;
   const n = [...arr];
-  [n[i], n[j]] = [n[j]!, n[i]!];
+  const first = n[i];
+  const second = n[j];
+  if (first === undefined || second === undefined) return arr;
+  n[i] = second;
+  n[j] = first;
   return n;
 }
 
@@ -44,6 +51,8 @@ function Repertorio() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [corrupted, setCorrupted] = useState(false);
+  const [backedUp, setBackedUp] = useState(false);
+  const [canSave, setCanSave] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [key, setKey] = useState<Key>("C");
@@ -60,14 +69,20 @@ function Repertorio() {
     const r = loadSongs();
     setSongs(r.songs);
     setCorrupted(r.corrupted);
+    if (r.corrupted) {
+      const copied = backupCorruptedSongs();
+      setBackedUp(copied);
+      setCanSave(copied);
+      if (!copied) toast.error("Não foi possível guardar uma cópia. O original não foi sobrescrito.");
+    }
     const p = loadPrefs();
     setKey(p.key);
     if (SEVEN_NOTE_SCALES.some((s) => s.id === p.scale)) setScale(p.scale);
     setLoaded(true);
   }, []);
   useEffect(() => {
-    if (loaded && !saveSongs(songs)) toast.error("Não foi possível salvar neste aparelho.");
-  }, [songs, loaded]);
+    if (loaded && canSave && !saveSongs(songs)) toast.error("Não foi possível salvar neste aparelho.");
+  }, [songs, loaded, canSave]);
 
   const resetForm = () => {
     setEditing(null);
@@ -95,7 +110,7 @@ function Repertorio() {
     setActive(id);
   };
   const updatePart = (id: string, fn: (s: Section) => Section) => setSections((all) => all.map((x) => (x.id === id ? fn(x) : x)));
-  const addChord = (degree: number) => active && updatePart(active, (s) => ({ ...s, prog: [...s.prog, degree] }));
+  const addChord = (degree: number) => active && updatePart(active, (s) => ({ ...s, prog: [...s.prog, degree], marks: undefined, same: undefined }));
 
   const submit = () => {
     if (!title.trim()) return;
@@ -157,17 +172,19 @@ function Repertorio() {
       <h1 className="mt-4 text-3xl font-extrabold sm:text-4xl">Repertório do Show</h1>
       <p className="text-base font-medium text-muted-foreground">Monte a ordem das músicas. Fica salvo neste aparelho.</p>
 
+      <CifraSearch />
       {corrupted && (
         <div role="alert" className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-dominant bg-dominant/15 p-4">
-          <p className="flex-1 text-base font-bold">Alguns dados estavam corrompidos</p>
-          <button onClick={() => { saveSongs(songs); setCorrupted(false); }} className="rounded-xl bg-dominant px-4 py-2 font-extrabold text-fn-foreground">Limpar</button>
+          <p className="flex-1 text-base font-bold">Alguns dados estavam corrompidos{backedUp ? ". Guardei uma cópia do original." : ". O original foi preservado."}</p>
+          <button onClick={() => { if (!backedUp && !backupCorruptedSongs()) { toast.error("Não foi possível guardar uma cópia do original."); return; } saveSongs(songs); setCanSave(true); setCorrupted(false); }} className="rounded-xl bg-dominant px-4 py-2 font-extrabold text-fn-foreground">Limpar</button>
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Link to="/palco" className={cn(tool, "col-span-2 bg-primary text-primary-foreground sm:col-span-1", !songs.length && "pointer-events-none opacity-40")}>
           <MonitorPlay className="h-5 w-5" /> Modo palco
         </Link>
+        <CifraImport onImport={(song) => setSongs((all) => [...all, song])} />
         <button onClick={share} disabled={!songs.length} className={tool}><Share2 className="h-5 w-5" /> Compartilhar</button>
         <button onClick={copyBackup} disabled={!songs.length} className={tool}><ClipboardCopy className="h-5 w-5" /> Copiar backup</button>
         <button onClick={() => setRestoreOpen((o) => !o)} className={tool}><Upload className="h-5 w-5" /> Restaurar</button>
@@ -219,11 +236,12 @@ function Repertorio() {
                 </div>
                 <div className="mt-2 flex min-h-10 flex-wrap items-center gap-2">
                   {sec.prog.length === 0 && <span className="text-base font-semibold text-muted-foreground">Nenhum acorde ainda…</span>}
-                  {sec.prog.map((d, j) => (
-                    <button key={j} type="button" onClick={(e) => { e.stopPropagation(); updatePart(sec.id, (s) => ({ ...s, prog: s.prog.filter((_, k) => k !== j) })); }} aria-label={`Remover acorde ${formChords[d]!.name}`} className={cn("rounded-xl border-2 bg-card px-3 py-1 font-display text-2xl font-extrabold", FN_CLASSES[formChords[d]!.fn].border, FN_CLASSES[formChords[d]!.fn].text)}>
-                      {formChords[d]!.name}
-                    </button>
-                  ))}
+                  {sec.prog.map((d, j) => {
+                    const chord = resolveChord({ key, scale }, d);
+                    return <Button key={j} variant="ghost" type="button" onClick={(e) => { e.stopPropagation(); updatePart(sec.id, (s) => ({ ...s, prog: s.prog.filter((_, k) => k !== j), marks: undefined, same: undefined })); }} aria-label={`Remover acorde ${chord.name}`} className={cn("h-auto rounded-xl border-2 bg-card px-3 py-1 font-display text-2xl font-extrabold", chord.fn ? FN_CLASSES[chord.fn].border : "border-border", chord.fn ? FN_CLASSES[chord.fn].text : "text-muted-foreground")}>
+                      {chord.name}
+                    </Button>;
+                  })}
                 </div>
               </div>
             ))}
@@ -252,7 +270,6 @@ function Repertorio() {
       <ol className="mt-6 space-y-3">
         {songs.length === 0 && <li className="rounded-2xl bg-muted p-5 text-lg font-semibold text-muted-foreground">Nenhuma música ainda.</li>}
         {songs.map((s, i) => {
-          const chords = songChords(s);
           const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
           return (
             <li key={s.id} role="button" tabIndex={0} aria-label={`Editar ${s.title}`} onClick={() => startEdit(s)} onKeyDown={onActivate(() => startEdit(s))}
@@ -264,9 +281,7 @@ function Repertorio() {
                 {s.sections.map((sec) => (
                   <div key={sec.id} className="mt-2">
                     <p className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">{sec.type}</p>
-                    <div className="flex flex-wrap gap-x-2 gap-y-1">
-                      {sec.prog.map((d, j) => <span key={j} className={cn("font-display text-3xl font-extrabold", FN_CLASSES[chords[d]!.fn].text)}>{chords[d]!.name}</span>)}
-                    </div>
+                    <SectionChords song={s} section={sec} />
                   </div>
                 ))}
                 {s.notes && <p className="mt-1 text-base font-medium text-muted-foreground">{s.notes}</p>}

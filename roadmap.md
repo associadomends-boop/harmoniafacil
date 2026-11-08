@@ -1,4 +1,4 @@
-- [ ] Estender acordes, preservar dados e proteger o original corrompido.
-- [ ] Adicionar busca e folha de importação local com prévia.
-- [ ] Mostrar trechos, pistas e repetições no Repertório e palco.
-- [ ] Rodar testes e verificar importação, transposição e recarga no celular.
+- [x] Estender acordes, preservar dados e proteger o original corrompido.
+- [x] Adicionar busca e folha de importação local com prévia.
+- [x] Mostrar trechos, pistas e repetições no Repertório e palco.
+- [x] Rodar testes e verificar importação, transposição e recarga no celular.
